@@ -11,19 +11,19 @@ puppeteer.use(StealthPlugin());
 const app = express();
 app.use(express.json());
 
-// ✅ Import Express routes
-const igSessionRoute = require('./backend/routes/igSession');
-const competitorRoute = require('./backend/routes/competitor');
-const storyLikeRoute = require('./backend/routes/storyLike');
-const stripeWebhookRoute = require('./backend/routes/stripeWebhook'); // ✅ NEW
-const testTriggerRoute = require('./backend/routes/testTrigger'); // ✅ NEW
+// ✅ Import Express routes (fixed paths!)
+const igSessionRoute = require('../../backend/routes/igSession');
+const competitorRoute = require('../../backend/routes/competitor');
+const storyLikeRoute = require('../../backend/routes/storyLike');
+const stripeWebhookRoute = require('../../backend/routes/stripeWebhook');
+const testTriggerRoute = require('../../backend/routes/testTrigger');
 
 // ✅ Mount routes
 app.use('/ig', igSessionRoute);
 app.use('/competitor', competitorRoute);
 app.use('/api/story', storyLikeRoute);
-app.use('/webhook/stripe', stripeWebhookRoute); // ✅ NEW
-app.use('/api/test', testTriggerRoute); // ✅ NEW
+app.use('/webhook/stripe', stripeWebhookRoute);
+app.use('/api/test', testTriggerRoute);
 
 // ✅ Start API server
 app.listen(3000, () => {
@@ -38,12 +38,12 @@ const connection = {
 
 const storyQueue = new Queue('story-like-queue', { connection });
 
-// 👇 DB helper functions
+// 👇 DB helper functions (fixed paths!)
 const {
   getStoryTargetsForUser,
   markTargetAsCompleted,
   insertNewStoryTargets
-} = require('./backend/lib/supabaseClient');
+} = require('../../backend/lib/supabaseClient');
 
 // ✅ Worker to process story view jobs
 const worker = new Worker('story-like-queue', async job => {
