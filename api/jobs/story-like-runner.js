@@ -11,12 +11,12 @@ puppeteer.use(StealthPlugin());
 const app = express();
 app.use(express.json());
 
-// ✅ Import Express routes (fixed paths!)
-const igSessionRoute = require('../../backend/routes/igSession');
-const competitorRoute = require('../../backend/routes/competitor');
-const storyLikeRoute = require('../../backend/routes/storyLike');
-const stripeWebhookRoute = require('../../backend/routes/stripeWebhook');
-const testTriggerRoute = require('../../backend/routes/testTrigger');
+// ✅ Corrected Import Express routes (adjusted path depth)
+const igSessionRoute = require('../../../backend/routes/igSession');
+const competitorRoute = require('../../../backend/routes/competitor');
+const storyLikeRoute = require('../../../backend/routes/storyLike');
+const stripeWebhookRoute = require('../../../backend/routes/stripeWebhook');
+const testTriggerRoute = require('../../../backend/routes/testTrigger');
 
 // ✅ Mount routes
 app.use('/ig', igSessionRoute);
@@ -38,12 +38,12 @@ const connection = {
 
 const storyQueue = new Queue('story-like-queue', { connection });
 
-// 👇 DB helper functions (fixed paths!)
+// ✅ Corrected DB helper function imports
 const {
   getStoryTargetsForUser,
   markTargetAsCompleted,
   insertNewStoryTargets
-} = require('../../backend/lib/supabaseClient');
+} = require('../../../backend/lib/supabaseClient');
 
 // ✅ Worker to process story view jobs
 const worker = new Worker('story-like-queue', async job => {
@@ -130,5 +130,3 @@ cron.schedule('0 */12 * * *', async () => {
 
   console.log('⏳ CRON complete.');
 });
-
-
