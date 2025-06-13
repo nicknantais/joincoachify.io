@@ -3,20 +3,22 @@ const express = require('express');
 const Stripe = require('stripe');
 const { createClient } = require('@supabase/supabase-js');
 
-const router = express.Router(); // 👈 use router, not app
+const router = express.Router();
 
-// 1. Setup Stripe & Supabase
+// Setup Stripe & Supabase
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
-// 2. Plan limits by ID
+// Plan limits by ID
 const PLAN_LIMITS = {
-  'basic_plan': { daily_actions: 50, ig_accounts: 1, funnel_stages: 3 },
-  'pro_plan':   { daily_actions: 200, ig_accounts: 3, funnel_stages: 10 },
-  'elite_plan': { daily_actions: 500, ig_accounts: 10, funnel_stages: 20 }
+  'pro_plan':   { daily_actions: 10000, ig_accounts: 5, funnel_stages: 10 },
+  'elite_plan': { daily_actions: 20000, ig_accounts: 10, funnel_stages: 20 }
 };
 
-// 3. Stripe Webhook Handler
+// Stripe Webhook Handler
 router.post('/', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
@@ -33,12 +35,10 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
     const email = session.customer_email;
     const stripeCustomerId = session.customer;
 
-    // ✅ Store plan_id and price_id if available
-    const plan_id = session.metadata?.plan_id || 'basic_plan';
+    const plan_id = session.metadata?.plan_id || 'elite_plan';
     const price_id = session.metadata?.price_id || null;
-    const limits = PLAN_LIMITS[plan_id] || PLAN_LIMITS['basic_plan'];
+    const limits = PLAN_LIMITS[plan_id] || PLAN_LIMITS['elite_plan'];
 
-    // ✅ Check for existing user
     let dbUser;
     const { data: existingUser } = await supabase
       .from('users')
@@ -70,7 +70,6 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
       dbUser = newUser;
     }
 
-    // ✅ Create Supabase auth user
     const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
       email,
       email_confirm: true
@@ -82,7 +81,6 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
       console.log('✅ Supabase auth user created:', authUser.user.id);
     }
 
-    // ✅ Generate Magic Link
     const { data: tokenData, error: tokenError } = await supabase.auth.admin.generateLink({
       type: 'magiclink',
       email,
@@ -97,7 +95,6 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
       console.log('✅ Magic login link:', tokenData.action_link);
     }
 
-    // ✅ Return magic link in response (optional)
     return res.status(200).json({
       received: true,
       magic_link: tokenData?.action_link
@@ -108,6 +105,7 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
 });
 
 module.exports = router;
+
 
 
 

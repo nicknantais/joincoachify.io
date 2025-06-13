@@ -38,16 +38,28 @@ const connection = {
 
 const storyQueue = new Queue('story-like-queue', { connection });
 
-// ✅ Corrected DB helper function imports
-const {
-  getStoryTargetsForUser,
-  markTargetAsCompleted,
-  insertNewStoryTargets
-} = require('../../../backend/lib/supabaseClient');
+// ✅ DB helper imports — include supabase
+const { supabase, getStoryTargetsForUser, markTargetAsCompleted, insertNewStoryTargets } = require('../../../backend/lib/supabaseClient');
 
-// ✅ Worker to process story view jobs
+// ✅ Worker to process story-like jobs (AUTOMATED SESSION PULLING)
 const worker = new Worker('story-like-queue', async job => {
-  const { igUsername, session_cookie, userId } = job.data;
+  const { userId } = job.data;
+
+  // Pull IG session from Supabase for this user
+  const { data, error } = await supabase
+    .from('igAccounts')
+    .select('igUsername, encryptedSession')
+    .eq('user_id', userId)
+    .single();
+
+  if (error || !data) {
+    console.error('❌ Failed to load IG session from Supabase:', error);
+    return;
+  }
+
+  const igUsername = data.igUsername || 'unknown';
+  const session_cookie = data.encryptedSession;
+
   console.log(`🧠 Starting story-like for ${igUsername}`);
 
   const browser = await puppeteer.launch({
@@ -90,7 +102,7 @@ const worker = new Worker('story-like-queue', async job => {
       }
     }
 
-    console.log(`✅ Finished story view job for ${igUsername}`);
+    console.log(`✅ Finished story-like job for ${igUsername}`);
   } catch (err) {
     console.error('❌ Puppeteer error:', err);
   } finally {
@@ -116,11 +128,8 @@ cron.schedule('0 */12 * * *', async () => {
         continue;
       }
 
-      await storyQueue.add('story-job', {
-        userId,
-        igUsername: 'placeholder',
-        session_cookie: 'placeholder'
-      });
+      // 🟢 ONLY passing userId now to the queue (not cookie)
+      await storyQueue.add('story-job', { userId });
 
       console.log(`✅ Queued story job for user ${userId}`);
     } catch (err) {

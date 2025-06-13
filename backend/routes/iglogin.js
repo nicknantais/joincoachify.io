@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { loginAndSaveSession } = require('../services/igLogin');  // ✅ Use your puppeteer login function
+const { loginAndSaveSession } = require('../services/igLogin');
 
-// POST /ig/save-session
-router.post('/save-session', async (req, res) => {
+// POST /ig/login
+router.post('/login', async (req, res) => {
   const { username, password, userId } = req.body;
 
   if (!username || !password || !userId) {
@@ -12,14 +12,16 @@ router.post('/save-session', async (req, res) => {
 
   try {
     const result = await loginAndSaveSession(username, password, userId);
+    
     if (result.success) {
-      return res.json({ success: true });
+      return res.json({ success: true, message: 'Instagram session saved.' });
     } else {
       return res.status(500).json({ success: false, message: result.error });
     }
+
   } catch (err) {
-    console.error('❌ Error in save-session route:', err);
-    return res.status(500).json({ success: false, message: 'Server error.' });
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Internal server error.' });
   }
 });
 

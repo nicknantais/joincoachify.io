@@ -24,6 +24,22 @@ async function saveFollowersToDB(userId, competitorUsername, usernames) {
   }
 }
 
+// ✅ Save IG session cookie to igAccounts table
+async function saveSessionToDB(userId, sessionCookie) {
+  const { error } = await supabase
+    .from('igAccounts')
+    .upsert({
+      user_id: userId,
+      igUsername: 'placeholder',  // (you can replace with actual IG username later)
+      encryptedSession: sessionCookie,
+      created_at: new Date().toISOString()
+    }, { onConflict: ['user_id'] });
+
+  if (error) {
+    console.error('❌ Error saving session to Supabase:', error);
+  }
+}
+
 // ✅ Fetch pending story targets for a user
 async function getStoryTargetsForUser(userId) {
   const { data, error } = await supabase
@@ -100,6 +116,7 @@ async function insertNewStoryTargets(userId) {
 
 module.exports = {
   saveFollowersToDB,
+  saveSessionToDB,  // ✅ <-- new function added to exports
   getStoryTargetsForUser,
   markTargetAsCompleted,
   insertNewStoryTargets
